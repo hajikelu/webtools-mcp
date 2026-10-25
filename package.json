@@ -9,7 +9,7 @@
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
     "test": "node --test",
-    "typecheck": "cf workers types && tsc -p tsconfig.json"
+    "typecheck": "cf workers types && tsc -p tsconfig.json && tsc -p tsconfig.test.json"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.3.1",
