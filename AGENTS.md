@@ -1,6 +1,6 @@
 # webtools-mcp
 
-Remote MCP server on Cloudflare Workers that exposes `web_search` and `web_fetch` by wrapping the AI SDK adapters from `agents/websearch/ai-sdk` and `agents/webfetch/ai-sdk`. Cloudflare Access (Managed OAuth) signs clients in; the Worker verifies the Access JWT.
+Remote MCP server on Cloudflare Workers that exposes `web_search` and `web_fetch` by wrapping the AI SDK adapters from `agents/websearch/ai-sdk` and `agents/webfetch/ai-sdk`, plus `web_render`, which reads JavaScript-rendered pages through Browser Run's `/markdown` Quick Action. Cloudflare Access (Managed OAuth) signs clients in; the Worker verifies the Access JWT.
 
 - Write all artifacts in English: code comments, commit messages, docs, issues, and PRs.
 - Before every commit, run `pnpm fmt` (oxfmt), `pnpm run typecheck`, and `pnpm test`. CI only deploys, so nothing else checks them.
