@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { createMcpHandler } from "agents/mcp/server";
 import { webFetchTool } from "agents/webfetch/ai-sdk";
+import { createAIWebSearch, WebSearchError, type WebSearchSource } from "agents/websearch";
 import { webSearchTool } from "agents/websearch/ai-sdk";
 
 import { accessJwks, verifyAccessJwt } from "./auth.ts";
@@ -41,13 +42,27 @@ function register<I, O extends Record<string, unknown>>(
   );
 }
 
+function rateLimitedSearch(env: Env): WebSearchSource {
+  const source = createAIWebSearch({ binding: env.AI, gateway: "webtools", provider: "exa" });
+  return {
+    ...source,
+    async search(request, options) {
+      if (!(await env.SEARCH_RATE_LIMIT.limit({ key: "web_search" })).success) {
+        // Not retryable: the limit is there to stop a runaway loop, and the adapter tells the model not to retry.
+        throw new WebSearchError("Search rate limit reached.", {
+          status: 429,
+          code: "web_search_rate_limited",
+          retryable: false,
+        });
+      }
+      return source.search(request, options);
+    },
+  };
+}
+
 function createServer(env: Env) {
   const server = new McpServer({ name: "webtools", version: "0.1.0" });
-  register(
-    server,
-    "web_search",
-    webSearchTool({ binding: env.AI, gateway: "webtools", provider: "exa" }),
-  );
+  register(server, "web_search", webSearchTool({ source: rateLimitedSearch(env) }));
   register(server, "web_fetch", webFetchTool({ binding: env.AI }));
   return server;
 }
