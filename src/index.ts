@@ -61,7 +61,15 @@ function rateLimitedSearch(env: Env): WebSearchSource {
 }
 
 function createServer(env: Env) {
-  const server = new McpServer({ name: "webtools", version: "0.1.0" });
+  const server = new McpServer(
+    { name: "webtools", version: "0.1.0" },
+    {
+      // Clients that don't declare the tools upfront (Pi's default codemode exposure) describe the server
+      // to the model with the first line of these instructions, so it must say on its own what the tools are for.
+      instructions:
+        "Web access: search the public web with web_search and read public web pages and other http(s) URLs with web_fetch. Use them for current events, documentation, and facts you can't verify from training data.",
+    },
+  );
   register(server, "web_search", webSearchTool({ source: rateLimitedSearch(env) }));
   register(server, "web_fetch", webFetchTool({ binding: env.AI }));
   return server;
