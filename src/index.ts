@@ -90,6 +90,8 @@ function webRenderTool(env: Env): Tool<{ url: string }, WebRenderOutput> {
         url,
         gotoOptions: { waitUntil: "networkidle2" },
       });
+      // Read whole, without web_fetch's byte cap: Browser Run, not the origin, writes this body, and a cap
+      // would fail large pages that fit in memory instead of cutting them.
       const body = (await response.json().catch(() => null)) as
         | BrowserRunMarkdownSuccessResponse
         | BrowserRunErrorResponse
