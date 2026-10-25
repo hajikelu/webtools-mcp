@@ -2,7 +2,7 @@
 
 Remote MCP server on Cloudflare Workers that exposes `web_search` and `web_fetch` by wrapping the AI SDK adapters from `agents/websearch/ai-sdk` and `agents/webfetch/ai-sdk`, plus `web_render`, which reads JavaScript-rendered pages through Browser Run's `/markdown` Quick Action. Cloudflare Access (Managed OAuth) signs clients in; the Worker verifies the Access JWT.
 
-- Write all artifacts in English: code comments, commit messages, docs, issues, and PRs.
+- Write code comments, commit messages, docs, issues, and PRs in English, even when the conversation is in Japanese. The exception is `README.ja.md`, the Japanese translation of `README.md`: write it in Japanese, and update it whenever `README.md` changes.
 - Before every commit, run `pnpm fmt` (oxfmt), `pnpm run typecheck`, and `pnpm test`. CI only deploys, so nothing else checks them.
 - mise provides Node.js and pnpm from `devEngines` in `package.json`. In a shell where mise isn't activated, prefix commands with `mise exec --` (for example `mise exec -- pnpm test`); otherwise the `devEngines` check rejects the Node.js on `PATH`.
 - Run everything through `cf` and the scaffold's `package.json` scripts. Keep Vite+ out: `vp migrate` swaps `vite` for a package without a `vite` binary, and `cf dev` and `cf build` stop working.
