@@ -1,8 +1,13 @@
 import { McpServer, type StandardSchemaWithJSON } from "@modelcontextprotocol/server";
 import { createMcpHandler } from "agents/mcp/server";
-import { isPrivateOrLocalHost } from "agents/webfetch";
+import { isPrivateOrLocalHost, type WebFetchToolOutput } from "agents/webfetch";
 import { webFetchTool } from "agents/webfetch/ai-sdk";
-import { createAIWebSearch, WebSearchError, type WebSearchSource } from "agents/websearch";
+import {
+  createAIWebSearch,
+  WebSearchError,
+  type WebSearchSource,
+  type WebSearchToolOutput,
+} from "agents/websearch";
 import { webSearchTool } from "agents/websearch/ai-sdk";
 import { z } from "zod";
 
@@ -19,12 +24,14 @@ function register<I, O extends Record<string, unknown>>(
   server: McpServer,
   name: string,
   tool: Tool<I, O>,
+  outputSchema: z.ZodType<O>,
 ) {
   server.registerTool(
     name,
     {
       description: tool.description,
       inputSchema: tool.inputSchema,
+      outputSchema,
       annotations: { readOnlyHint: true, openWorldHint: true },
     },
     async (args, ctx) => {
@@ -43,6 +50,51 @@ function register<I, O extends Record<string, unknown>>(
     },
   );
 }
+
+// The agents adapters export their output types but no schemas, so `Exact` fails typecheck when an `agents` bump
+// changes the output. The schemas are loose because clients validate against the advertised JSON Schema, where
+// z.object() means additionalProperties: false. `Shape` drops the `[key: string]: unknown` that z.looseObject()
+// adds to the inferred type.
+type Shape<T> = T extends readonly (infer U)[]
+  ? Shape<U>[]
+  : T extends object
+    ? { [K in keyof T as string extends K ? (unknown extends T[K] ? never : K) : K]: Shape<T[K]> }
+    : T;
+type Exact<A, B> =
+  (<T>() => T extends Shape<A> ? 1 : 2) extends <T>() => T extends Shape<B> ? 1 : 2 ? true : false;
+
+const webSearchOutput = z.looseObject({
+  items: z.array(
+    z.looseObject({
+      url: z.string(),
+      title: z.string(),
+      description: z.string().optional(),
+      lastModifiedDate: z.string().optional(),
+      imageUrl: z.string().optional(),
+      faviconUrl: z.string().optional(),
+    }),
+  ),
+  metadata: z.looseObject({ query: z.string(), requestId: z.string(), latencyMs: z.number() }),
+  provider: z.string().optional(),
+});
+true satisfies Exact<z.infer<typeof webSearchOutput>, WebSearchToolOutput>;
+
+const webFetchOutput = z.looseObject({
+  url: z.string(),
+  finalUrl: z.string(),
+  status: z.number(),
+  contentType: z.string(),
+  via: z.enum(["markdown-negotiated", "converted", "json", "text", "raw", "rendered"]),
+  content: z.string(),
+  totalChars: z.number(),
+  title: z.string().optional(),
+  headers: z.record(z.string(), z.string()),
+  bytes: z.number(),
+  redirects: z.array(z.string()),
+  offset: z.number(),
+  nextOffset: z.number().nullable(),
+});
+true satisfies Exact<z.infer<typeof webFetchOutput>, WebFetchToolOutput>;
 
 function rateLimitedSearch(env: Env): WebSearchSource {
   const source = createAIWebSearch({ binding: env.AI, gateway: "webtools", provider: "exa" });
@@ -64,14 +116,16 @@ function rateLimitedSearch(env: Env): WebSearchSource {
 
 const RENDER_MAX_CHARS = 50_000;
 
-interface WebRenderOutput extends Record<string, unknown> {
-  url: string;
-  finalUrl: string;
-  status: number;
-  title: string;
-  markdown: string;
-  totalChars: number;
-}
+// Strict, unlike the adapters' schemas: this file builds the object, so no field can arrive unnamed.
+const webRenderOutput = z.object({
+  url: z.string(),
+  finalUrl: z.string(),
+  status: z.number(),
+  title: z.string(),
+  markdown: z.string(),
+  totalChars: z.number(),
+});
+type WebRenderOutput = z.infer<typeof webRenderOutput>;
 
 // Not built on webFetchTool({ source }): its result headers and error messages name `web_fetch`.
 function webRenderTool(env: Env): Tool<{ url: string }, WebRenderOutput> {
@@ -147,9 +201,14 @@ function createServer(env: Env) {
         "Web access: web_search searches the public web, web_fetch reads http(s) URLs, and web_render reads pages that need JavaScript when web_fetch comes back empty. Use them for current events, documentation, and facts you can't verify.",
     },
   );
-  register(server, "web_search", webSearchTool({ source: rateLimitedSearch(env) }));
-  register(server, "web_fetch", webFetchTool({ binding: env.AI }));
-  register(server, "web_render", webRenderTool(env));
+  register(
+    server,
+    "web_search",
+    webSearchTool({ source: rateLimitedSearch(env) }),
+    webSearchOutput,
+  );
+  register(server, "web_fetch", webFetchTool({ binding: env.AI }), webFetchOutput);
+  register(server, "web_render", webRenderTool(env), webRenderOutput);
   return server;
 }
 
