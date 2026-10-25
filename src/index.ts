@@ -1,5 +1,6 @@
 import { McpServer, type StandardSchemaWithJSON } from "@modelcontextprotocol/server";
 import { createMcpHandler } from "agents/mcp/server";
+import { isPrivateOrLocalHost } from "agents/webfetch";
 import { webFetchTool } from "agents/webfetch/ai-sdk";
 import { createAIWebSearch, WebSearchError, type WebSearchSource } from "agents/websearch";
 import { webSearchTool } from "agents/websearch/ai-sdk";
@@ -80,6 +81,13 @@ function webRenderTool(env: Env): Tool<{ url: string }, WebRenderOutput> {
       url: z.url({ protocol: /^https?$/ }).describe("The http(s) URL to render."),
     }),
     async execute({ url }, { abortSignal }) {
+      // Redirects, script navigation, and the page's own requests happen inside the browser, past this check.
+      const host = new URL(url).hostname;
+      if (isPrivateOrLocalHost(host)) {
+        throw new Error(
+          `That URL can't be rendered here (the host ${host} is a private or local address). Do not retry it.`,
+        );
+      }
       if (!(await env.RENDER_RATE_LIMIT.limit({ key: "web_render" })).success) {
         throw new Error("web_render rate limit reached. Do not retry; answer without it.");
       }
