@@ -1,6 +1,12 @@
 import { McpServer, type StandardSchemaWithJSON } from "@modelcontextprotocol/server";
 import { createMcpHandler } from "agents/mcp/server";
-import { isPrivateOrLocalHost, type WebFetchToolOutput } from "agents/webfetch";
+import {
+  createDirectWebFetch,
+  isPrivateOrLocalHost,
+  WebFetchError,
+  type WebFetchSource,
+  type WebFetchToolOutput,
+} from "agents/webfetch";
 import { webFetchTool } from "agents/webfetch/ai-sdk";
 import {
   createAIWebSearch,
@@ -114,6 +120,28 @@ function rateLimitedSearch(env: Env): WebSearchSource {
   };
 }
 
+function rateLimitedFetch(env: Env): WebFetchSource {
+  const source = createDirectWebFetch({ binding: env.AI });
+  return {
+    ...source,
+    async fetch(request, options) {
+      if (!(await env.FETCH_RATE_LIMIT.limit({ key: "web_fetch" })).success) {
+        // The adapter has no rate-limit code; a non-retryable failure tells the model not to retry.
+        throw new WebFetchError(
+          "Fetch rate limit reached. Stop fetching and answer with what you have",
+          {
+            status: 429,
+            code: "web_fetch_unavailable",
+            retryable: false,
+            url: request.url,
+          },
+        );
+      }
+      return source.fetch(request, options);
+    },
+  };
+}
+
 const RENDER_MAX_CHARS = 50_000;
 
 // Strict, unlike the adapters' schemas: this file builds the object, so no field can arrive unnamed.
@@ -207,7 +235,7 @@ function createServer(env: Env) {
     webSearchTool({ source: rateLimitedSearch(env) }),
     webSearchOutput,
   );
-  register(server, "web_fetch", webFetchTool({ binding: env.AI }), webFetchOutput);
+  register(server, "web_fetch", webFetchTool({ source: rateLimitedFetch(env) }), webFetchOutput);
   register(server, "web_render", webRenderTool(env), webRenderOutput);
   return server;
 }
