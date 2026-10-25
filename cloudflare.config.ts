@@ -15,6 +15,11 @@ export default defineConfig(({ mode }) => ({
         namespace: "1001",
         simple: { limit: 30, period: 60 },
       }),
+      // Fetches cost little, but nothing else stops a loop that keeps reading pages.
+      FETCH_RATE_LIMIT: bindings.rateLimit({
+        namespace: "1003",
+        simple: { limit: 60, period: 60 },
+      }),
       // Browser Run has no local mode. Renders bill browser time and bypass AI Gateway, so the Worker limits them.
       BROWSER: bindings.browser({ dev: { remote: true } }),
       RENDER_RATE_LIMIT: bindings.rateLimit({

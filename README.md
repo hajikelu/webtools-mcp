@@ -26,7 +26,7 @@ flowchart LR
 ## Features
 
 - Behind Access, the Worker still verifies the Access JWT's signature, issuer, and audience on every request, and rejects the request if any check fails.
-- The Worker allows 30 searches and 10 renders a minute. AI Gateway also caps daily and monthly spending on searches.
+- The Worker allows 30 searches, 60 fetches, and 10 renders a minute. AI Gateway also caps daily and monthly spending on searches.
 - Fetched and rendered pages reach the model inside `<untrusted_web_content>`, and a page can't close that tag early.
 - Each tool declares an `outputSchema`, so clients that call tools from code, such as Pi's codemode, get typed results.
 - The server `instructions` describe all three tools on one line, for clients that list a server by that line instead of declaring its tools.
