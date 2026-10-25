@@ -1,5 +1,7 @@
 # webtools-mcp
 
+[日本語](README.ja.md)
+
 A remote [MCP](https://modelcontextprotocol.io) server on Cloudflare Workers that gives coding agents web access: search the web, read pages, and render pages that need JavaScript. Cloudflare Access signs clients in with OAuth, so only you can use it.
 
 ```mermaid
