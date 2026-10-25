@@ -1,3 +1,5 @@
+// `node --test` runs this module by stripping types: keep it to erasable syntax, import with the `.ts`
+// extension, and leave out Workers-only modules such as `cloudflare:workers`.
 import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from "jose";
 
 export const ACCESS_ISSUER = "https://hajikelu.cloudflareaccess.com";
