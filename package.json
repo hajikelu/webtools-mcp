@@ -1,0 +1,40 @@
+{
+  "name": "webtools-mcp",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "cf dev",
+    "build": "cf build",
+    "deploy": "cf deploy",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check",
+    "test": "node --test",
+    "typecheck": "cf workers types && tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "2.3.1",
+    "agents": "0.30.1",
+    "jose": "^6.2.13",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "2.0.0-beta.v.4",
+    "@types/node": "^26.6.5",
+    "cf": "1.0.0-beta.21",
+    "oxfmt": "0.74.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.0"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.15.0",
+      "onFail": "error"
+    },
+    "runtime": {
+      "name": "node",
+      "version": "26.12.1",
+      "onFail": "error"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+allowBuilds:
+  # Its install script only prints a funding notice.
+  core-js-pure: false
+  esbuild: true
+  workerd: true
+# Refuses a version published with weaker trust evidence than an earlier one, as a hijacked account's
+# release tends to be.
+trustPolicy: no-downgrade
+autoDedupe: true
+# Peers named by version alone keep lockfile keys short, so a diff shows what moved.
+dedupePeers: true
+lockfile:
+  # Records autoDedupe in the lockfile, so a frozen install fails on one written without it.
+  includeResolutionSettings: true
