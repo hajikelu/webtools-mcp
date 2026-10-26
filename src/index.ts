@@ -60,9 +60,10 @@ function register<I, O extends Record<string, unknown>>(
 }
 
 // The agents adapters export their output types but no schemas, so `Exact` fails typecheck when an `agents` bump
-// changes the output. The schemas are loose because clients validate against the advertised JSON Schema, where
-// z.object() means additionalProperties: false. `Shape` drops the `[key: string]: unknown` that z.looseObject()
-// adds to the inferred type.
+// changes the output types. The schemas are loose because `Exact` sees only the types: `agents` builds these
+// objects, and a key it adds at runtime would fail validation in clients that use a closed schema (z.object()
+// advertises additionalProperties: false). `Shape` drops the `[key: string]: unknown` that z.looseObject() adds
+// to the inferred type.
 type Shape<T> = T extends readonly (infer U)[]
   ? Shape<U>[]
   : T extends object
