@@ -1,19 +1,8 @@
 import { McpServer, type StandardSchemaWithJSON } from "@modelcontextprotocol/server";
 import { createMcpHandler } from "agents/mcp/server";
-import {
-  createDirectWebFetch,
-  isPrivateOrLocalHost,
-  WebFetchError,
-  type WebFetchSource,
-  type WebFetchToolOutput,
-} from "agents/webfetch";
+import { isPrivateOrLocalHost, type WebFetchToolOutput } from "agents/webfetch";
 import { webFetchTool } from "agents/webfetch/ai-sdk";
-import {
-  createAIWebSearch,
-  WebSearchError,
-  type WebSearchSource,
-  type WebSearchToolOutput,
-} from "agents/websearch";
+import type { WebSearchToolOutput } from "agents/websearch";
 import { webSearchTool } from "agents/websearch/ai-sdk";
 import { z } from "zod";
 
@@ -31,6 +20,7 @@ function register<I, O extends Record<string, unknown>>(
   name: string,
   tool: Tool<I, O>,
   outputSchema: z.ZodType<O>,
+  rateLimit: RateLimit,
 ) {
   server.registerTool(
     name,
@@ -41,6 +31,18 @@ function register<I, O extends Record<string, unknown>>(
       annotations: { readOnlyHint: true, openWorldHint: true },
     },
     async (args, ctx) => {
+      // Not retryable: the limits are there to stop a runaway loop.
+      if (!(await rateLimit.limit({ key: name })).success) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `${name} is rate limited. Do not retry it; answer with what you have, and say that ${name} was unavailable.`,
+            },
+          ],
+          isError: true,
+        };
+      }
       try {
         const output = await tool.execute(args as I, { abortSignal: ctx.mcpReq.signal });
         return {
@@ -102,46 +104,6 @@ const webFetchOutput = z.looseObject({
 });
 true satisfies Exact<z.infer<typeof webFetchOutput>, WebFetchToolOutput>;
 
-function rateLimitedSearch(env: Env): WebSearchSource {
-  const source = createAIWebSearch({ binding: env.AI, gateway: "webtools", provider: "exa" });
-  return {
-    ...source,
-    async search(request, options) {
-      if (!(await env.SEARCH_RATE_LIMIT.limit({ key: "web_search" })).success) {
-        // Not retryable: the limit is there to stop a runaway loop, and the adapter tells the model not to retry.
-        throw new WebSearchError("Search rate limit reached.", {
-          status: 429,
-          code: "web_search_rate_limited",
-          retryable: false,
-        });
-      }
-      return source.search(request, options);
-    },
-  };
-}
-
-function rateLimitedFetch(env: Env): WebFetchSource {
-  const source = createDirectWebFetch({ binding: env.AI });
-  return {
-    ...source,
-    async fetch(request, options) {
-      if (!(await env.FETCH_RATE_LIMIT.limit({ key: "web_fetch" })).success) {
-        // The adapter has no rate-limit code; a non-retryable failure tells the model not to retry.
-        throw new WebFetchError(
-          "Fetch rate limit reached. Stop fetching and answer with what you have",
-          {
-            status: 429,
-            code: "web_fetch_unavailable",
-            retryable: false,
-            url: request.url,
-          },
-        );
-      }
-      return source.fetch(request, options);
-    },
-  };
-}
-
 const RENDER_MAX_CHARS = 50_000;
 
 // Strict, unlike the adapters' schemas: this file builds the object, so no field can arrive unnamed.
@@ -170,15 +132,17 @@ function webRenderTool(env: Env): Tool<{ url: string }, WebRenderOutput> {
           `That URL can't be rendered here (the host ${host} is a private or local address). Do not retry it.`,
         );
       }
-      if (!(await env.RENDER_RATE_LIMIT.limit({ key: "web_render" })).success) {
-        throw new Error("web_render rate limit reached. Do not retry; answer without it.");
-      }
       // quickAction() takes no signal, so this is the last point where a cancel saves browser time.
       abortSignal?.throwIfAborted();
       // The default, domcontentloaded, returns before an app fetches its content.
       const response = await env.BROWSER.quickAction("markdown", {
         url,
         gotoOptions: { waitUntil: "networkidle2" },
+      }).catch((e: unknown) => {
+        throw new Error(
+          `web_render could not reach Browser Run for ${url}. You may retry once after a short wait.`,
+          { cause: e },
+        );
       });
       // Read whole, without web_fetch's byte cap: Browser Run, not the origin, writes this body, and a cap
       // would fail large pages that fit in memory instead of cutting them.
@@ -188,9 +152,17 @@ function webRenderTool(env: Env): Tool<{ url: string }, WebRenderOutput> {
         | null;
       if (!body?.success) {
         const reasons = body?.errors.map((e) => e.message).join("; ") || "no details";
-        throw new Error(`web_render failed for ${url} (${response.status}): ${reasons}`, {
-          cause: body?.errors,
-        });
+        // Browser Run's 422 means the page crashed or timed out, which a retry with the same options repeats.
+        const retryAdvice =
+          response.status === 429 || response.status >= 500
+            ? "You may retry once after a short wait."
+            : "Do not retry it.";
+        throw new Error(
+          `web_render failed for ${url} (${response.status}: ${reasons}). ${retryAdvice}`,
+          {
+            cause: body?.errors,
+          },
+        );
       }
       // Don't leave half of a surrogate pair at the cut.
       const end = /[\uD800-\uDBFF]/.test(body.result[RENDER_MAX_CHARS - 1] ?? "")
@@ -232,11 +204,18 @@ function createServer(env: Env) {
   register(
     server,
     "web_search",
-    webSearchTool({ source: rateLimitedSearch(env) }),
+    webSearchTool({ binding: env.AI, gateway: "webtools", provider: "exa" }),
     webSearchOutput,
+    env.SEARCH_RATE_LIMIT,
   );
-  register(server, "web_fetch", webFetchTool({ source: rateLimitedFetch(env) }), webFetchOutput);
-  register(server, "web_render", webRenderTool(env), webRenderOutput);
+  register(
+    server,
+    "web_fetch",
+    webFetchTool({ binding: env.AI }),
+    webFetchOutput,
+    env.FETCH_RATE_LIMIT,
+  );
+  register(server, "web_render", webRenderTool(env), webRenderOutput, env.RENDER_RATE_LIMIT);
   return server;
 }
 
