@@ -27,7 +27,7 @@ export default defineConfig(({ mode }) => ({
         simple: { limit: 10, period: 60 },
       }),
       ACCESS_AUD: bindings.text("da8dccd8776bc89a68e82e6a445e17e67753d3ffc6ffb7abaf8654fe7e0702e2"),
-      // Access isn't in front of `cf dev`. Production builds never define it; the Worker also checks for localhost.
+      // Access isn't in front of `cf dev`. Production builds never define it.
       ...(mode === "development" && { SKIP_ACCESS_AUTH: bindings.text("1") }),
     },
     domains: ["webtools.mcp.hajike.lu"],
