@@ -18,10 +18,12 @@ interface Tool<I, O> {
 
 function register<I, O extends Record<string, unknown>>(
   server: McpServer,
-  name: string,
-  tool: Tool<I, O>,
-  outputSchema: z.ZodType<O>,
-  rateLimit: RateLimit,
+  {
+    name,
+    tool,
+    outputSchema,
+    rateLimit,
+  }: { name: string; tool: Tool<I, O>; outputSchema: z.ZodType<O>; rateLimit: RateLimit },
 ) {
   server.registerTool(
     name,
@@ -116,27 +118,24 @@ function createServer(env: Env) {
         "Web access: web_search searches the public web, web_fetch reads http(s) URLs, and web_render reads pages that need JavaScript when web_fetch comes back empty. Use them for current events, documentation, and facts you can't verify.",
     },
   );
-  register(
-    server,
-    "web_search",
-    webSearchTool({ binding: env.AI, gateway: "webtools", provider: "exa" }),
-    webSearchOutput,
-    env.SEARCH_RATE_LIMIT,
-  );
-  register(
-    server,
-    "web_fetch",
-    webFetchTool({ binding: env.AI }),
-    webFetchOutput,
-    env.FETCH_RATE_LIMIT,
-  );
-  register(
-    server,
-    "web_render",
-    webRenderTool(env.BROWSER),
-    webRenderOutput,
-    env.RENDER_RATE_LIMIT,
-  );
+  register(server, {
+    name: "web_search",
+    tool: webSearchTool({ binding: env.AI, gateway: "webtools", provider: "exa" }),
+    outputSchema: webSearchOutput,
+    rateLimit: env.SEARCH_RATE_LIMIT,
+  });
+  register(server, {
+    name: "web_fetch",
+    tool: webFetchTool({ binding: env.AI }),
+    outputSchema: webFetchOutput,
+    rateLimit: env.FETCH_RATE_LIMIT,
+  });
+  register(server, {
+    name: "web_render",
+    tool: webRenderTool(env.BROWSER),
+    outputSchema: webRenderOutput,
+    rateLimit: env.RENDER_RATE_LIMIT,
+  });
   return server;
 }
 
