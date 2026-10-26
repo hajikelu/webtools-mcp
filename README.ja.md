@@ -103,7 +103,7 @@ pnpm run typecheck
 pnpm test
 ```
 
-ユニットテストが対象にするのは、認証のモジュールだけです。ツールは、動いているWorkerに対して確かめます。
+ユニットテストが対象にするのは、認証のモジュールと`web_render`です。`web_render`のテストでは、Browser Runのbindingをフェイクに差し替えます。ほかのツールは、動いているWorkerに対して確かめます。
 
 ## 費用
 
