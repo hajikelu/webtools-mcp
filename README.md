@@ -26,7 +26,7 @@ flowchart LR
 ## Features
 
 - Behind Access, the Worker still verifies the Access JWT's signature, issuer, and audience on every request, and rejects the request if any check fails.
-- The Worker allows 30 searches, 60 fetches, and 10 renders a minute. AI Gateway also caps daily and monthly spending on searches.
+- The Worker allows 30 searches, 60 fetches, and 10 renders a minute. AI Gateway's spend limits don't stop searches, so the rate limit is what holds their cost down.
 - Fetched and rendered pages reach the model inside `<untrusted_web_content>`, and a page can't close that tag early.
 - Each tool declares an `outputSchema`, so clients that call tools from code, such as Pi's codemode, get typed results.
 - The server `instructions` describe all three tools on one line, for clients that list a server by that line instead of declaring its tools.
@@ -61,7 +61,7 @@ Then run `pi mcp login webtools` and check it with `pi mcp list`.
 ### 1. Set up Cloudflare
 
 1. Create an Access application of type `mcp` for the hostname the Worker will serve. Turn on Managed OAuth with dynamic client registration, and allow loopback redirect URIs so CLI clients can sign in. Add a policy that allows only you. Note the application's AUD tag.
-2. Create an AI Gateway named `webtools`. Turn on authentication, and set spend limits that suit you.
+2. Create an AI Gateway named `webtools` and turn on authentication. Searches are paid from your AI Gateway credits, so add some.
 
 ### 2. Point the code at your resources
 
@@ -107,6 +107,6 @@ The unit tests cover only the auth module. Check the tools against a running Wor
 
 ## Costs
 
-Besides the Workers Paid subscription, you pay for searches and renders. The Web Search API bills each search, and AI Gateway's spend limits cap the total. Browser Run bills renders by browser time: Workers Paid includes 10 hours a month, and each hour beyond that costs $0.09.
+Besides the Workers Paid subscription, you pay for searches and renders. Each search draws down your AI Gateway credits at the search provider's list price. AI Gateway's spend limits don't stop searches, so only the Worker's rate limit holds search spend down. Browser Run bills renders by browser time: Workers Paid includes 10 hours a month, and each hour beyond that costs $0.09.
 
 Requests, logs, Markdown conversion, rate limiting, and Access stay within the plan's included usage for personal use.
