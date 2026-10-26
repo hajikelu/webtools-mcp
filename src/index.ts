@@ -6,7 +6,7 @@ import type { WebSearchToolOutput } from "agents/websearch";
 import { webSearchTool } from "agents/websearch/ai-sdk";
 import { z } from "zod";
 
-import { accessJwks, verifyAccessJwt } from "./auth.ts";
+import { isAuthorized } from "./auth.ts";
 
 interface Tool<I, O> {
   description: string;
@@ -221,18 +221,7 @@ function createServer(env: Env) {
 
 export default {
   async fetch(req, env, ctx) {
-    // `cf deploy --mode development` would carry the bypass binding, so also require a local request.
-    const local = "SKIP_ACCESS_AUTH" in env && new URL(req.url).hostname === "localhost";
-    if (
-      !local &&
-      !(await verifyAccessJwt(
-        req.headers.get("cf-access-jwt-assertion"),
-        accessJwks,
-        env.ACCESS_AUD,
-      ))
-    ) {
-      return new Response("Unauthorized", { status: 401 });
-    }
+    if (!(await isAuthorized(req, env))) return new Response("Unauthorized", { status: 401 });
     return createMcpHandler(() => createServer(env))(req, env, ctx);
   },
 } satisfies ExportedHandler<Env>;
