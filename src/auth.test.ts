@@ -14,7 +14,7 @@ function sign({
   audience = AUD,
   expiresIn = "5m" as string | number,
 } = {}) {
-  return new SignJWT({ email: "user@example.com" })
+  return new SignJWT({ email: "user@example.test" })
     .setProtectedHeader({ alg: "RS256" })
     .setIssuer(issuer)
     .setAudience(audience)
@@ -48,7 +48,7 @@ test("rejects an expired JWT", async () => {
 test("rejects a JWT whose payload was changed after signing", async () => {
   const [header, , signature] = (await sign()).split(".");
   const payload = Buffer.from(
-    JSON.stringify({ email: "attacker@example.com", iss: ACCESS_ISSUER, aud: AUD }),
+    JSON.stringify({ email: "attacker@example.test", iss: ACCESS_ISSUER, aud: AUD }),
   ).toString("base64url");
   assert.equal(await verifyAccessJwt(`${header}.${payload}.${signature}`, keys, AUD), false);
 });
