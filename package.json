@@ -8,6 +8,7 @@
     "deploy": "cf deploy",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
+    "check": "pnpm peers check && pnpm run fmt:check && pnpm run typecheck && pnpm test",
     "test": "node --test",
     "typecheck": "cf workers types && tsc -p tsconfig.json && tsc -p tsconfig.test.json"
   },
