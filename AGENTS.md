@@ -11,5 +11,6 @@
 - Auth fails closed: verify the Access JWT's signature, issuer, and audience on every request. The auth bypass exists only in development mode, and `cf deploy --dry-run` must not list it.
 - Keep the Cloudflare account ID and client MCP configs out of the repo.
 - Workers Logs is on. Keep the `Cf-Access-Jwt-Assertion` header out of logs: it carries the user's email.
-- Changes reach `main` only through a pull request that the user merges; a ruleset enforces this. Work on a branch and open a PR.
+- Changes reach `main` only through a pull request; a ruleset enforces this. Work on a branch and open a PR.
+- Label a PR `trivial` when it changes no behavior (comment and typo fixes, formatting), so `-label:trivial` can hide it from PR lists and searches, and turn on auto-merge for it with `gh pr merge --auto --squash`. The user merges every other PR, unless they ask for auto-merge. Auto-merge takes whatever the branch holds once `check` passes: before pushing a behavior change to a `trivial` PR, remove the label and run `gh pr merge --disable-auto`.
 - `.github/workflows/deploy.yaml` holds the Cloudflare secrets: keep it triggered only by pushes to `main`, so pull requests never reach them. Name workflow files `*.yaml`, and pin every action to a commit SHA with `pinact run`. The repository allows only `actions/checkout` and `jdx/mise-action`; a PR that adds another action must say so, so the user can extend the allowlist.
