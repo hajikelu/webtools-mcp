@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "target": "es2024",
-    "lib": ["es2024"],
+    "target": "es2025",
+    "lib": ["es2025"],
     "module": "preserve",
     "moduleResolution": "bundler",
     "types": [],
