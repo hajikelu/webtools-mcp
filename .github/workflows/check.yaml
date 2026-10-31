@@ -21,7 +21,4 @@ jobs:
           # As in deploy.yaml. A cache would save only the few seconds of Node.js and pnpm downloads.
           cache: false
       - run: pnpm install --frozen-lockfile
-      - run: pnpm peers check
-      - run: pnpm run fmt:check
-      - run: pnpm run typecheck
-      - run: pnpm test
+      - run: pnpm run check

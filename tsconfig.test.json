@@ -1,6 +1,6 @@
 {
   "extends": "./tsconfig.json",
-  "include": ["src/**/*.test.ts", ".cloudflare/types"],
+  "include": ["src/**/*.test.ts", "scripts", ".cloudflare/types"],
   "exclude": [],
   "compilerOptions": {
     "types": ["node"],
