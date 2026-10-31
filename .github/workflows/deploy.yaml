@@ -16,9 +16,11 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # No step pushes, and dependency code runs in later steps: keep GITHUB_TOKEN out of their reach.
           persist-credentials: false
       - uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
         with:
+          # A restored cache skips the checksum check mise runs on download, and this job holds the Cloudflare secrets.
           cache: false
       - run: pnpm install --frozen-lockfile
       - run: pnpm peers check
