@@ -1,7 +1,6 @@
 allowBuilds:
   # Its install script only prints a funding notice.
   core-js-pure: false
-  esbuild: true
   workerd: true
 # Refuses a version published with weaker trust evidence than an earlier one, as a hijacked account's
 # release tends to be.
