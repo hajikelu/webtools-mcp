@@ -2,12 +2,13 @@ import { McpServer, type StandardSchemaWithJSON } from "@modelcontextprotocol/se
 import { createMcpHandler } from "agents/mcp/server";
 import type { WebFetchToolOutput } from "agents/webfetch";
 import { webFetchTool } from "agents/webfetch/ai-sdk";
-import type { WebSearchToolOutput } from "agents/websearch";
+import { createAIWebSearch, type WebSearchToolOutput } from "agents/websearch";
 import { webSearchTool } from "agents/websearch/ai-sdk";
 import { z } from "zod";
 
 import { isAuthorized } from "./auth.ts";
 import { webRenderOutput, webRenderTool } from "./render.ts";
+import { trimDescriptions } from "./search.ts";
 
 interface Tool<I, O> {
   description: string;
@@ -120,7 +121,11 @@ function createServer(env: Env) {
   );
   register(server, {
     name: "web_search",
-    tool: webSearchTool({ binding: env.AI, gateway: "webtools", provider: "exa" }),
+    tool: webSearchTool({
+      source: trimDescriptions(
+        createAIWebSearch({ binding: env.AI, gateway: "webtools", provider: "exa" }),
+      ),
+    }),
     outputSchema: webSearchOutput,
     rateLimit: env.SEARCH_RATE_LIMIT,
   });
