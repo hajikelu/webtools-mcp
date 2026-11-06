@@ -14,22 +14,22 @@
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.4.0",
-    "agents": "0.32.0",
-    "jose": "^6.2.14",
+    "agents": "0.33.0",
+    "jose": "^6.2.15",
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "2.0.0-beta.v.8",
+    "@cloudflare/vite-plugin": "2.0.0-beta.v.12",
     "@types/node": "^26.6.6",
-    "cf": "1.0.0-beta.26",
-    "oxfmt": "0.75.0",
+    "cf": "1.0.0-beta.28",
+    "oxfmt": "0.76.0",
     "typescript": "^7.0.2",
-    "vite": "^8.3.5"
+    "vite": "^8.3.6"
   },
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
-      "version": "12.16.1",
+      "version": "12.18.0",
       "onFail": "error"
     },
     "runtime": {
