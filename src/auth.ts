@@ -18,6 +18,11 @@ export async function isAuthorized(
   if (!token) return false;
   return jwtVerify(token, keys, { issuer: ACCESS_ISSUER, audience: env.ACCESS_AUD }).then(
     () => true,
-    () => false,
+    (e: { code?: unknown; name: string; claim?: string }) => {
+      // Only these fields: a claim error's `payload` and `cause` hold the user's email, and `message` is free text.
+      // A DOMException's `code` is a number that says nothing, so those fall back on `name`.
+      console.error("auth", typeof e.code === "string" ? e.code : e.name, e.claim ?? "");
+      return false;
+    },
   );
 }
