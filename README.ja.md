@@ -104,7 +104,7 @@ pnpm run typecheck
 pnpm test
 ```
 
-ユニットテストはフェイクのbindingで動き、認証のモジュール、`web_render`、Workerとツールのつなぎ方を対象にします。`web_search`と`web_fetch`は、動いているWorkerに対して確かめます。
+ユニットテストはフェイクのbindingで動き、認証のモジュール、`web_render`、Workerとツールのつなぎ方を対象にします。実際のバックエンドに依存する部分は、動いているWorkerに対して確かめます。
 
 ## 費用
 
