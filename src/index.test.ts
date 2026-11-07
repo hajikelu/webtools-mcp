@@ -180,3 +180,35 @@ test("gives the model the tool's message and keeps the cause in the logs", async
     [["web_render", cause]],
   );
 });
+
+test("logs an error that has no cause", async (t) => {
+  const log = t.mock.method(console, "error", () => {});
+  // web_render refuses a private host with an error that has no cause, before it calls Browser Run.
+  const result = await call(DEV, "web_render", { url: "http://localhost/" });
+  assert.equal(result.isError, true);
+  const [name, logged] = log.mock.calls[0]?.arguments ?? [];
+  assert.equal(name, "web_render");
+  assert.equal(logged?.message, result.content[0].text);
+});
+
+test("logs a rate limiter that throws and doesn't run the tool", async (t) => {
+  const log = t.mock.method(console, "error", () => {});
+  const failure = new Error("binding down");
+  const quickAction = t.mock.fn(BINDINGS.BROWSER.quickAction);
+  const env = {
+    ...DEV,
+    BROWSER: { quickAction },
+    RENDER_RATE_LIMIT: {
+      limit: async () => {
+        throw failure;
+      },
+    },
+  };
+  const result = await call(env, "web_render", { url: PAGE });
+  assert.equal(result.isError, true);
+  assert.equal(quickAction.mock.callCount(), 0);
+  assert.deepEqual(
+    log.mock.calls.map((c) => c.arguments),
+    [["web_render", failure]],
+  );
+});

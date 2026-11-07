@@ -47,28 +47,29 @@ function register<I, O extends Record<string, unknown>>(
       annotations: { readOnlyHint: true, openWorldHint: true },
     },
     async (args, ctx) => {
-      // Not retryable: the limits are there to stop a runaway loop.
-      if (!(await rateLimit.limit({ key: name })).success) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `${name} is rate limited. Do not retry it; answer with what you have, and say that ${name} was unavailable.`,
-            },
-          ],
-          isError: true,
-        };
-      }
       try {
+        // Not retryable: the limits are there to stop a runaway loop. In the `try` so that a failing limit() is logged.
+        if (!(await rateLimit.limit({ key: name })).success) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `${name} is rate limited. Do not retry it; answer with what you have, and say that ${name} was unavailable.`,
+              },
+            ],
+            isError: true,
+          };
+        }
         const output = await tool.execute(args as I, { abortSignal: ctx.mcpReq.signal });
         return {
           content: [{ type: "text", text: tool.toModelOutput({ output }).value }],
           structuredContent: { contentTrust: CONTENT_TRUST, ...output },
         };
       } catch (e) {
-        // The adapters write `message` for the model and keep operator detail (credits, request IDs) in `cause`.
+        // The adapters write `message` for the model and keep operator detail (credits, request IDs) in `cause`. An error
+        // without a cause, such as a failing limit()'s, is logged whole, and its raw message still reaches the model.
         if (!(e instanceof Error)) throw e;
-        console.error(name, e.cause);
+        console.error(name, e.cause ?? e);
         return { content: [{ type: "text", text: e.message }], isError: true };
       }
     },
