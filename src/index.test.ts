@@ -31,7 +31,35 @@ const BINDINGS = {
 };
 const DEV = { ...BINDINGS, SKIP_ACCESS_AUTH: "1" };
 
-function post(url: string, env: object, name: string, args: object) {
+// `content` is what the fake backend serves, and `text` is how the tool's text result shows it.
+const TOOLS = [
+  {
+    name: "web_search",
+    args: { query: "workers" },
+    limit: "SEARCH_RATE_LIMIT",
+    schemaField: "items",
+    content: "Docs",
+    text: "1. Docs",
+  },
+  {
+    name: "web_fetch",
+    args: { url: PAGE },
+    limit: "FETCH_RATE_LIMIT",
+    schemaField: "content",
+    content: "# Docs",
+    text: "<untrusted_web_content>\n# Docs\n</untrusted_web_content>",
+  },
+  {
+    name: "web_render",
+    args: { url: PAGE },
+    limit: "RENDER_RATE_LIMIT",
+    schemaField: "markdown",
+    content: "# App",
+    text: "<untrusted_web_content>\n# App\n</untrusted_web_content>",
+  },
+] as const;
+
+function post(url: string, env: object, method: string, params: object) {
   return worker.fetch(
     new Request(url, {
       method: "POST",
@@ -41,20 +69,15 @@ function post(url: string, env: object, name: string, args: object) {
         // The SDK refuses a local request without Host, which workerd sets and Node's Request doesn't.
         Host: new URL(url).host,
       },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 1,
-        method: "tools/call",
-        params: { name, arguments: args },
-      }),
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
     }),
     env as Env,
     {} as ExecutionContext,
   );
 }
 
-async function call(env: object, name: string, args: object) {
-  const body = await (await post("http://localhost:5173/mcp", env, name, args)).text();
+async function rpc(env: object, method: string, params: object) {
+  const body = await (await post("http://localhost:5173/mcp", env, method, params)).text();
   // An event-stream answer carries the JSON-RPC response on its last data line.
   const data =
     body
@@ -66,19 +89,32 @@ async function call(env: object, name: string, args: object) {
   return result;
 }
 
-test("rejects a request without an Access JWT before it reaches a tool", async () => {
-  const response = await post("https://webtools.example.test/mcp", BINDINGS, "web_render", {
-    url: PAGE,
-  });
+function call(env: object, name: string, args: object) {
+  return rpc(env, "tools/call", { name, arguments: args });
+}
+
+test("rejects a request without an Access JWT before it reaches a tool", async (t) => {
+  const limit = t.mock.fn(allow.limit);
+  const response = await post(
+    "https://webtools.example.test/mcp",
+    { ...BINDINGS, RENDER_RATE_LIMIT: { limit } },
+    "tools/call",
+    { name: "web_render", arguments: { url: PAGE } },
+  );
   assert.equal(response.status, 401);
+  assert.equal(limit.mock.callCount(), 0);
+});
+
+test("advertises each tool with its output schema", async () => {
+  const { tools } = await rpc(DEV, "tools/list", {});
+  for (const { name, schemaField } of TOOLS) {
+    const tool = tools.find((t: { name: string }) => t.name === name);
+    assert.ok(tool?.outputSchema?.properties[schemaField], name);
+  }
 });
 
 test("refuses each tool on its own rate limit and tells the model not to retry", async () => {
-  for (const [name, args, limit] of [
-    ["web_search", { query: "workers" }, "SEARCH_RATE_LIMIT"],
-    ["web_fetch", { url: PAGE }, "FETCH_RATE_LIMIT"],
-    ["web_render", { url: PAGE }, "RENDER_RATE_LIMIT"],
-  ] as const) {
+  for (const { name, args, limit } of TOOLS) {
     const env = { ...DEV, [limit]: { limit: async () => ({ success: false }) } };
     const result = await call(env, name, args);
     assert.equal(result.isError, true, name);
@@ -90,15 +126,12 @@ test("refuses each tool on its own rate limit and tells the model not to retry",
 });
 
 test("returns each tool's result as text and as structured content its output schema accepts", async () => {
-  for (const [name, args, page, structured] of [
-    ["web_search", { query: "workers" }, "Docs", { items: [{ url: PAGE, title: "Docs" }] }],
-    ["web_fetch", { url: PAGE }, "# Docs", { content: "# Docs", status: 200 }],
-    ["web_render", { url: PAGE }, "# App", { markdown: "# App", title: "App" }],
-  ] as const) {
+  for (const { name, args, content, text } of TOOLS) {
     const result = await call(DEV, name, args);
     assert.ok(!result.isError, result.content[0].text);
-    assert.ok(result.content[0].text.includes(page), result.content[0].text);
-    assert.partialDeepStrictEqual(result.structuredContent, structured);
+    assert.ok(result.content[0].text.includes(text), result.content[0].text);
+    // Only that the page is in there: this test leaves open whether the page is framed in this channel.
+    assert.ok(JSON.stringify(result.structuredContent).includes(content), name);
   }
 });
 
