@@ -96,12 +96,11 @@ pnpm dev
 > [!WARNING]
 > Web SearchとBrowser Runにはローカルで動く仕組みがありません。`cf dev`はこれらのbindingを自分のCloudflareアカウントにつなぐので、ローカルでの検索と描画も本物で、課金されます。
 
-コミットの前には、毎回次を実行します。
+コミットの前には毎回、コードを整形し、CIと同じチェックを実行します。
 
 ```sh
 pnpm fmt
-pnpm run typecheck
-pnpm test
+pnpm run check
 ```
 
 ユニットテストはフェイクのbindingで動き、認証のモジュール、`web_render`、Workerとツールのつなぎ方を対象にします。実際のバックエンドに依存する部分は、動いているWorkerに対して確かめます。

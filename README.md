@@ -96,12 +96,11 @@ pnpm dev
 > [!WARNING]
 > Web Search and Browser Run have no local mode. `cf dev` connects their bindings to your Cloudflare account, so local searches and renders are real and billed.
 
-Before every commit, run:
+Before every commit, format the code and run the checks CI runs:
 
 ```sh
 pnpm fmt
-pnpm run typecheck
-pnpm test
+pnpm run check
 ```
 
 The unit tests run on fake bindings and cover the auth module, `web_render`, and how the Worker connects the tools. Check what depends on the real backends against a running Worker.
