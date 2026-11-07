@@ -21,14 +21,14 @@ flowchart LR
 | `web_fetch`  | URLを読み、Markdown（HTML、PDF、Office文書は変換する）、JSON、テキストのどれかで返す。長いページは`offset`で区切って読む。            | Workerからの`fetch`と[Markdown Conversion](https://developers.cloudflare.com/workers-ai/features/markdown-conversion/)           |
 | `web_render` | ヘッドレスブラウザでページを開き、JavaScriptを実行してから、結果をMarkdownで読む。`web_fetch`が空のアプリの枠だけを返したときに使う。 | [Browser Run](https://developers.cloudflare.com/browser-run/)のQuick Action `/markdown`                                          |
 
-`web_search`と`web_fetch`は、[`agents`](https://www.npmjs.com/package/agents)のAI SDK用アダプター（`agents/websearch/ai-sdk`と`agents/webfetch/ai-sdk`）を包んだものなので、説明文と結果の形式はアダプターのものをそのまま使います。
+`web_search`と`web_fetch`は、[`agents`](https://www.npmjs.com/package/agents)のAI SDK用アダプター（`agents/websearch/ai-sdk`と`agents/webfetch/ai-sdk`）を包んだものなので、説明文とテキストの結果の形式はアダプターのものをそのまま使います。
 
 ## 特徴
 
 - Accessの後ろにあっても、WorkerはリクエストごとにAccessのJWTの署名、発行者、audienceを検証し、どれかが通らなければリクエストを拒否します。
 - Workerは、検索を1分30回、ページの読み込みを1分60回、描画を1分10回までに制限します。AI Gatewayの費用の上限は検索を止めないので、検索の費用を抑えるのはこのrate limitです。
-- 読み込んだページと描画したページは、`<untrusted_web_content>`で囲んでモデルに渡します。ページの中身からこのタグを閉じることはできません。
-- `web_search`は、アダプターがテキストでするのと同じく、構造化した結果でも説明を600文字に切り詰めます。Claude Codeはテキストではなく構造化した結果を読み、アダプターはそこに説明を丸ごと残すためです。
+- テキストの結果では、読み込んだページと描画したページを`<untrusted_web_content>`で囲みます。ページの中身からこのタグを閉じることはできません。Claude Codeなどのクライアントは、テキストではなく構造化した結果を読みます。構造化した結果では、ページをそのままJSONの文字列に入れるので、ページの中身からこの文字列の外に出ることもできません。どの構造化した結果も、先頭に`"contentTrust": "untrusted_web_content"`を置いて、中身が信頼できないことを示します。
+- `web_search`は、テキストでも構造化した結果でも説明を600文字に切り詰めます。アダプターが切り詰めるのはテキストだけで、そのままだと構造化した結果を読むクライアントには説明が丸ごと渡るためです。
 - どのツールも`outputSchema`を宣言するので、Piのcodemodeのように、コードからツールを呼ぶクライアントは型の付いた結果を受け取れます。
 - サーバーの`instructions`は、3つのツールを1行で説明します。ツールを宣言せず、この1行でサーバーを紹介するクライアントのためです。
 
