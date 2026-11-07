@@ -21,14 +21,14 @@ flowchart LR
 | `web_fetch`  | Reads a URL as Markdown (HTML, PDF, and Office documents are converted), JSON, or text. Long pages are read in windows with `offset`.          | `fetch` from the Worker, and [Markdown Conversion](https://developers.cloudflare.com/workers-ai/features/markdown-conversion/)      |
 | `web_render` | Loads a page in a headless browser, runs its JavaScript, and reads the result as Markdown. Use it when `web_fetch` returns an empty app shell. | [Browser Run](https://developers.cloudflare.com/browser-run/) `/markdown` Quick Action                                              |
 
-`web_search` and `web_fetch` wrap the AI SDK adapters from [`agents`](https://www.npmjs.com/package/agents) (`agents/websearch/ai-sdk` and `agents/webfetch/ai-sdk`), so they keep the adapters' descriptions and result formats.
+`web_search` and `web_fetch` wrap the AI SDK adapters from [`agents`](https://www.npmjs.com/package/agents) (`agents/websearch/ai-sdk` and `agents/webfetch/ai-sdk`), so they keep the adapters' descriptions and text result formats.
 
 ## Features
 
 - Behind Access, the Worker still verifies the Access JWT's signature, issuer, and audience on every request, and rejects the request if any check fails.
 - The Worker allows 30 searches, 60 fetches, and 10 renders a minute. AI Gateway's spend limits don't stop searches, so the rate limit is what holds their cost down.
-- Text results put fetched and rendered pages inside `<untrusted_web_content>`, and a page can't close that tag early. Structured results, which Claude Code reads instead, hold pages unchanged in JSON strings, which a page can't leave either. Every structured result starts with `"contentTrust": "untrusted_web_content"`, to mark what it holds as untrusted.
-- `web_search` trims each description to 600 characters in its structured result, as the adapter does in its text: Claude Code reads the structured result instead of the text, and the adapter leaves descriptions there whole.
+- Text results put fetched and rendered pages inside `<untrusted_web_content>`, and a page can't close that tag early. Structured results, which clients such as Claude Code read instead of the text, hold pages unchanged in JSON strings that a page can't leave either. Every structured result starts with `"contentTrust": "untrusted_web_content"` to mark its contents as untrusted.
+- `web_search` trims each description to 600 characters in both its text and its structured result. The adapter trims only the text, so clients that read the structured result would otherwise get descriptions whole.
 - Each tool declares an `outputSchema`, so clients that call tools from code, such as Pi's codemode, get typed results.
 - The server `instructions` describe all three tools on one line, for clients that list a server by that line instead of declaring its tools.
 

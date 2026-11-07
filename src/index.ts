@@ -17,10 +17,10 @@ interface Tool<I, O> {
   toModelOutput(options: { output: O }): { value: string };
 }
 
-// Claude Code gives the model the structured content as JSON and drops the text, so it never sees the text's
-// `<untrusted_web_content>`. JSON keeps a page inside its string, and framing the value would throw off `totalChars`
-// and `offset`, so a label goes beside the page instead: first, where a client that cuts a long result is more
-// likely to keep it.
+// Clients such as Claude Code give the model the structured content as JSON and drop the text, so the model never
+// sees the text's `<untrusted_web_content>`. JSON keeps a page inside its string, and framing the value would throw
+// off `totalChars` and `offset`, so a label goes beside the page instead: first, where a client that cuts a long
+// result is more likely to keep it.
 const CONTENT_TRUST = "untrusted_web_content";
 
 function register<I, O extends Record<string, unknown>>(
