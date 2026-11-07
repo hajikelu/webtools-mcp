@@ -1,4 +1,5 @@
-// Prints tool names and result text only: the schemas in tools/list run long.
+// Prints tool names without their schemas, which run long. A call prints its text, then its structured content as
+// the JSON that clients such as Claude Code give the model instead of the text.
 const [name, args = "{}"] = process.argv.slice(2);
 if (!name) throw new Error("usage: node scripts/mcp.ts tools/list | <tool> [JSON arguments]");
 
@@ -31,5 +32,6 @@ if (name === "tools/list") {
 } else {
   for (const item of result.content)
     console.log(item.type === "text" ? item.text : JSON.stringify(item));
+  if (result.structuredContent) console.log(JSON.stringify(result.structuredContent));
   if (result.isError) process.exitCode = 1;
 }
