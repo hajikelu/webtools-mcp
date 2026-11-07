@@ -104,7 +104,7 @@ pnpm run typecheck
 pnpm test
 ```
 
-The unit tests cover the auth module and `web_render`, which they hand a fake Browser Run binding. Check the other tools against a running Worker.
+The unit tests run on fake bindings and cover the auth module, `web_render`, and how the Worker connects the tools. Check `web_search` and `web_fetch` against a running Worker.
 
 ## Costs
 
