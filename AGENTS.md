@@ -8,7 +8,7 @@
 - Pin `agents`, `@modelcontextprotocol/server`, `cf`, and `@cloudflare/vite-plugin` to exact versions. `agents` peers on one exact `@modelcontextprotocol/server` version, and its web adapters are `@beta`. After changing dependencies, run `pnpm peers check`: `pnpm install` only warns about unmet peers, and CI fails on them.
 - Keep `allowBuilds` in `pnpm-workspace.yaml` as it is: install scripts run in the deploy job, next to the Cloudflare secrets. If a new dependency needs one, explain why in the PR and let the user decide.
 - Keep the tool names `web_search` and `web_fetch`: the `agents` web adapters' descriptions, result headers, and error messages refer to them by name.
-- Auth fails closed: verify the Access JWT's signature, issuer, and audience on every request. The auth bypass exists only in development mode, and `cf deploy --dry-run` must not list it.
+- Auth fails closed: verify the Access JWT's signature, issuer, and audience on every request. The auth bypass exists only in development mode: `pnpm run check` fails if a production build lists it.
 - Keep the Cloudflare account ID and client MCP configs out of the repo.
 - Workers Logs is on. Keep the `Cf-Access-Jwt-Assertion` header out of logs: it carries the user's email.
 - Changes reach `main` only through a pull request; a ruleset enforces this. Work on a branch and open a PR.

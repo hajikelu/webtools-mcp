@@ -26,12 +26,10 @@ Start from an up-to-date `main`, on a new branch `chore/update-dependencies`. Ea
 
 8. **`agents` diff.** The tests never load `src/index.ts`, and comparing `agents` costs nothing, so this decides which billed tools step 9 calls. If `agents` moved, download both tarballs (`pnpm view agents@<version> dist.tarball`) into separate empty temp directories. Diff the files that `exports` in its `package.json` maps `src`'s imports to, and follow their imports into the hashed chunks: a chunk whose name changed has changed contents, so diff the old and new pair. Done when you can say whether any code differs beyond comments and chunk names.
 
-9. **Checks.** If `pnpm peers check` fails on `@modelcontextprotocol/server`, pin it to the version `pnpm view agents@<version> peerDependencies` names. Then run these, which `pnpm run check` doesn't cover:
-   - `pnpm cf deploy --dry-run --mode production` builds the Worker as the deploy job does. Done when it builds and its bindings omit `SKIP_ACCESS_AUTH`.
-   - `pnpm dev`, then the calls below, then stop the server:
-     - `node scripts/mcp.ts tools/list`. Done when every tool `src/index.ts` registers is listed.
-     - `node scripts/mcp.ts web_fetch '{"url":"https://example.com/"}'`. Done when it returns status 200.
-     - Only if step 8 found a code difference, once each without asking: `node scripts/mcp.ts web_search '{"query":"example domain","limit":1}'` and `node scripts/mcp.ts web_render '{"url":"https://example.com/"}'`. Done when both return results.
+9. **Checks.** If `pnpm peers check` fails on `@modelcontextprotocol/server`, pin it to the version `pnpm view agents@<version> peerDependencies` names. Then start `pnpm dev`, make these calls, which `pnpm run check` doesn't cover, and stop the server:
+   - `node scripts/mcp.ts tools/list`. Done when every tool `src/index.ts` registers is listed.
+   - `node scripts/mcp.ts web_fetch '{"url":"https://example.com/"}'`. Done when it returns status 200.
+   - Only if step 8 found a code difference, once each without asking: `node scripts/mcp.ts web_search '{"query":"example domain","limit":1}'` and `node scripts/mcp.ts web_render '{"url":"https://example.com/"}'`. Done when both return results.
 
    When a check fails or step 7 names a change that touches `src`, that package needs code. If the run holds other updates, put its old version back in `package.json`, run `pnpm install`, and hold it back with anything that moves with it. If it's the run's only update, fix `src` here. Stop and ask when the fix would change a tool's name, input, or output, touch auth, or isn't clear.
 
