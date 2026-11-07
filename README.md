@@ -27,7 +27,7 @@ flowchart LR
 
 - Behind Access, the Worker still verifies the Access JWT's signature, issuer, and audience on every request, and rejects the request if any check fails.
 - The Worker allows 30 searches, 60 fetches, and 10 renders a minute. AI Gateway's spend limits don't stop searches, so the rate limit is what holds their cost down.
-- Fetched and rendered pages reach the model inside `<untrusted_web_content>`, and a page can't close that tag early.
+- Text results put fetched and rendered pages inside `<untrusted_web_content>`, and a page can't close that tag early. Structured results, which Claude Code reads instead, hold pages unchanged in JSON strings, which a page can't leave either. Every structured result starts with `"contentTrust": "untrusted_web_content"`, to mark what it holds as untrusted.
 - `web_search` trims each description to 600 characters in its structured result, as the adapter does in its text: Claude Code reads the structured result instead of the text, and the adapter leaves descriptions there whole.
 - Each tool declares an `outputSchema`, so clients that call tools from code, such as Pi's codemode, get typed results.
 - The server `instructions` describe all three tools on one line, for clients that list a server by that line instead of declaring its tools.

@@ -17,6 +17,12 @@ interface Tool<I, O> {
   toModelOutput(options: { output: O }): { value: string };
 }
 
+// Claude Code gives the model the structured content as JSON and drops the text, so it never sees the text's
+// `<untrusted_web_content>`. JSON keeps a page inside its string, and framing the value would throw off `totalChars`
+// and `offset`, so a label goes beside the page instead: first, where a client that cuts a long result is more
+// likely to keep it.
+const CONTENT_TRUST = "untrusted_web_content";
+
 function register<I, O extends Record<string, unknown>>(
   server: McpServer,
   {
@@ -24,14 +30,20 @@ function register<I, O extends Record<string, unknown>>(
     tool,
     outputSchema,
     rateLimit,
-  }: { name: string; tool: Tool<I, O>; outputSchema: z.ZodType<O>; rateLimit: RateLimit },
+  }: {
+    name: string;
+    tool: Tool<I, O>;
+    // `ZodObject` for `.extend`, and `ZodType<O>` to tie the schema to the tool's output.
+    outputSchema: z.ZodObject & z.ZodType<O>;
+    rateLimit: RateLimit;
+  },
 ) {
   server.registerTool(
     name,
     {
       description: tool.description,
       inputSchema: tool.inputSchema,
-      outputSchema,
+      outputSchema: outputSchema.extend({ contentTrust: z.literal(CONTENT_TRUST) }),
       annotations: { readOnlyHint: true, openWorldHint: true },
     },
     async (args, ctx) => {
@@ -51,7 +63,7 @@ function register<I, O extends Record<string, unknown>>(
         const output = await tool.execute(args as I, { abortSignal: ctx.mcpReq.signal });
         return {
           content: [{ type: "text", text: tool.toModelOutput({ output }).value }],
-          structuredContent: output,
+          structuredContent: { contentTrust: CONTENT_TRUST, ...output },
         };
       } catch (e) {
         // The adapters write `message` for the model and keep operator detail (credits, request IDs) in `cause`.
