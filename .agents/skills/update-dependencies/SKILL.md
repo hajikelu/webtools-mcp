@@ -14,12 +14,17 @@ Start from an up-to-date `main`, on a new branch `chore/update-dependencies`.
 
 4. **Vulnerabilities.** Run `pnpm audit`. This is the only check: GitHub's dependency graph can't read the two-document `pnpm-lock.yaml` that pnpm 12 writes, so Dependabot alerts miss every npm package. Done when it reports nothing, or each finding is ready to name in the PR.
 
-5. **Release notes.** Read the notes from the old version to the new one for every package under `dependencies` that moved. The tests never load `src/index.ts`, so these notes are the only warning of a runtime break. Done when you can name each breaking change that touches what `src` imports, or say that none does.
+5. **Release notes.** Read the notes from the old version to the new one for every package under `dependencies` that moved. Done when you can name each breaking change that touches what `src` imports, or say that none does.
 
-6. **Checks.** If `pnpm peers check` fails on `@modelcontextprotocol/server`, pin it to the version `pnpm view agents@<version> peerDependencies` names. Then run these, which `pnpm run check` doesn't cover:
+6. **`agents` diff.** The tests never load `src/index.ts`, and comparing `agents` costs nothing, so this decides which billed tools step 7 calls. If `agents` moved, download both tarballs (`pnpm view agents@<version> dist.tarball`) into separate empty temp directories. Diff the files that `exports` in its `package.json` maps `src`'s imports to, and follow their imports into the hashed chunks: a chunk whose name changed has changed contents, so diff the old and new pair. Done when you can say whether any code differs beyond comments and chunk names.
+
+7. **Checks.** If `pnpm peers check` fails on `@modelcontextprotocol/server`, pin it to the version `pnpm view agents@<version> peerDependencies` names. Then run these, which `pnpm run check` doesn't cover:
    - `pnpm cf deploy --dry-run --mode production` builds the Worker as the deploy job does. Done when it builds and its bindings omit `SKIP_ACCESS_AUTH`.
-   - `pnpm dev`, then `node scripts/mcp.ts tools/list`, then stop the server. Done when every tool `src/index.ts` registers is listed. This listing is the only request an update sends to a running Worker: tool calls bill the account, so this flow leaves them out.
+   - `pnpm dev`, then the calls below, then stop the server:
+     - `node scripts/mcp.ts tools/list`. Done when every tool `src/index.ts` registers is listed.
+     - `node scripts/mcp.ts web_fetch '{"url":"https://example.com/"}'`. Done when it returns status 200.
+     - Only if step 6 found a code difference, once each without asking: `node scripts/mcp.ts web_search '{"query":"example domain","limit":1}'` and `node scripts/mcp.ts web_render '{"url":"https://example.com/"}'`. Done when both return results.
 
-7. **PR.** Commit as `chore: update dependencies`. In the body, show the version changes as a `diff`, give the verdict from step 5, list the checks you ran, and say that no tool was called. Done when `gh pr checks <n> --watch` passes. Stop there and report: the user merges.
+8. **PR.** Commit as `chore: update dependencies`. In the body, show the version changes as a `diff`, give the verdicts from steps 5 and 6, list the checks you ran, and name any tool you didn't call. Done when `gh pr checks <n> --watch` passes. Stop there and report: the user merges.
 
-8. **After the user asks to merge.** Run `gh pr merge <n> --squash --delete-branch`. Merging deploys to production, so watch the `Deploy` run for the merge commit with `gh run watch <run-id> --exit-status`. Done when that run has finished and you have reported its conclusion.
+9. **After the user asks to merge.** Run `gh pr merge <n> --squash --delete-branch`. Merging deploys to production, so watch the `Deploy` run for the merge commit with `gh run watch <run-id> --exit-status`. Done when that run has finished and you have reported its conclusion.
