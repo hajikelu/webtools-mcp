@@ -1,12 +1,12 @@
 import { McpServer, type StandardSchemaWithJSON } from "@modelcontextprotocol/server";
 import { createMcpHandler } from "agents/mcp/server";
 import type { WebFetchToolOutput } from "agents/webfetch";
-import { webFetchTool } from "agents/webfetch/ai-sdk";
 import { createAIWebSearch, type WebSearchToolOutput } from "agents/websearch";
 import { webSearchTool } from "agents/websearch/ai-sdk";
 import { z } from "zod";
 
 import { isAuthorized } from "./auth.ts";
+import { webFetchFromFragment } from "./fragment.ts";
 import { webRenderOutput, webRenderTool } from "./render.ts";
 import { trimDescriptions } from "./search.ts";
 
@@ -144,7 +144,7 @@ function createServer(env: Env) {
   });
   register(server, {
     name: "web_fetch",
-    tool: webFetchTool({ binding: env.AI }),
+    tool: webFetchFromFragment(env.AI),
     outputSchema: webFetchOutput,
     rateLimit: env.FETCH_RATE_LIMIT,
   });
