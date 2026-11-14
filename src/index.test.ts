@@ -161,6 +161,26 @@ test("trims web_search descriptions in the structured content", async () => {
   assert.ok(trimmed.length <= 600, `${trimmed.length} characters`);
 });
 
+test("starts web_fetch's window at the URL fragment unless the call gives an offset", async (t) => {
+  // 35,000 characters of intro put the heading past the first 20,000-character window.
+  const page = `# Docs\n\n${"Intro.\n".repeat(5_000)}\n## Usage\n\nText.\n`;
+  t.mock.method(
+    globalThis,
+    "fetch",
+    async () => new Response(page, { headers: { "content-type": "text/markdown" } }),
+  );
+  const usage = page.indexOf("## Usage");
+
+  const fromFragment = (await call(DEV, "web_fetch", { url: `${PAGE}#usage` })).structuredContent;
+  assert.equal(fromFragment.offset, usage);
+  assert.ok(fromFragment.content.startsWith("## Usage"), fromFragment.content);
+
+  const fromTop = (await call(DEV, "web_fetch", { url: `${PAGE}#usage`, offset: 0 }))
+    .structuredContent;
+  assert.equal(fromTop.offset, 0);
+  assert.ok(fromTop.content.startsWith("# Docs"));
+});
+
 test("gives the model the tool's message and keeps the cause in the logs", async (t) => {
   const log = t.mock.method(console, "error", () => {});
   const cause = new Error("connection lost, request id 123");

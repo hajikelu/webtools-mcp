@@ -15,13 +15,13 @@ flowchart LR
 
 ## ツール
 
-| ツール       | すること                                                                                                                              | 使うもの                                                                                                                         |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `web_search` | 公開されているWebを検索し、URL、タイトル、短い説明を返す。                                                                            | [AI Gateway](https://developers.cloudflare.com/ai-gateway/)経由の[Web Search API](https://developers.cloudflare.com/web-search/) |
-| `web_fetch`  | URLを読み、Markdown（HTML、PDF、Office文書は変換する）、JSON、テキストのどれかで返す。長いページは`offset`で区切って読む。            | Workerからの`fetch`と[Markdown Conversion](https://developers.cloudflare.com/workers-ai/features/markdown-conversion/)           |
-| `web_render` | ヘッドレスブラウザでページを開き、JavaScriptを実行してから、結果をMarkdownで読む。`web_fetch`が空のアプリの枠だけを返したときに使う。 | [Browser Run](https://developers.cloudflare.com/browser-run/)のQuick Action `/markdown`                                          |
+| ツール       | すること                                                                                                                                                                             | 使うもの                                                                                                                         |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| `web_search` | 公開されているWebを検索し、URL、タイトル、短い説明を返す。                                                                                                                           | [AI Gateway](https://developers.cloudflare.com/ai-gateway/)経由の[Web Search API](https://developers.cloudflare.com/web-search/) |
+| `web_fetch`  | URLを読み、Markdown（HTML、PDF、Office文書は変換する）、JSON、テキストのどれかで返す。長いページは`offset`で区切って読む。URLに`#fragment`があれば、それが指す見出しや定義から読む。 | Workerからの`fetch`と[Markdown Conversion](https://developers.cloudflare.com/workers-ai/features/markdown-conversion/)           |
+| `web_render` | ヘッドレスブラウザでページを開き、JavaScriptを実行してから、結果をMarkdownで読む。`web_fetch`が空のアプリの枠だけを返したときに使う。                                                | [Browser Run](https://developers.cloudflare.com/browser-run/)のQuick Action `/markdown`                                          |
 
-`web_search`と`web_fetch`は、[`agents`](https://www.npmjs.com/package/agents)のAI SDK用アダプター（`agents/websearch/ai-sdk`と`agents/webfetch/ai-sdk`）を包んだものなので、説明文とテキストの結果の形式はアダプターのものをそのまま使います。
+`web_search`と`web_fetch`は、[`agents`](https://www.npmjs.com/package/agents)のAI SDK用アダプター（`agents/websearch/ai-sdk`と`agents/webfetch/ai-sdk`）を包んだものなので、説明文とテキストの結果の形式はアダプターのものをそのまま使います。ただし`web_fetch`の説明文には、URLのフラグメントについての1文を足しています。
 
 ## 特徴
 

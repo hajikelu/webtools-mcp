@@ -15,13 +15,13 @@ flowchart LR
 
 ## Tools
 
-| Tool         | What it does                                                                                                                                   | Backed by                                                                                                                           |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `web_search` | Searches the public web and returns URLs, titles, and short descriptions.                                                                      | [Web Search API](https://developers.cloudflare.com/web-search/) through [AI Gateway](https://developers.cloudflare.com/ai-gateway/) |
-| `web_fetch`  | Reads a URL as Markdown (HTML, PDF, and Office documents are converted), JSON, or text. Long pages are read in windows with `offset`.          | `fetch` from the Worker, and [Markdown Conversion](https://developers.cloudflare.com/workers-ai/features/markdown-conversion/)      |
-| `web_render` | Loads a page in a headless browser, runs its JavaScript, and reads the result as Markdown. Use it when `web_fetch` returns an empty app shell. | [Browser Run](https://developers.cloudflare.com/browser-run/) `/markdown` Quick Action                                              |
+| Tool         | What it does                                                                                                                                                                                            | Backed by                                                                                                                           |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `web_search` | Searches the public web and returns URLs, titles, and short descriptions.                                                                                                                               | [Web Search API](https://developers.cloudflare.com/web-search/) through [AI Gateway](https://developers.cloudflare.com/ai-gateway/) |
+| `web_fetch`  | Reads a URL as Markdown (HTML, PDF, and Office documents are converted), JSON, or text. Long pages are read in windows with `offset`; a URL's `#fragment` starts at the heading or definition it names. | `fetch` from the Worker, and [Markdown Conversion](https://developers.cloudflare.com/workers-ai/features/markdown-conversion/)      |
+| `web_render` | Loads a page in a headless browser, runs its JavaScript, and reads the result as Markdown. Use it when `web_fetch` returns an empty app shell.                                                          | [Browser Run](https://developers.cloudflare.com/browser-run/) `/markdown` Quick Action                                              |
 
-`web_search` and `web_fetch` wrap the AI SDK adapters from [`agents`](https://www.npmjs.com/package/agents) (`agents/websearch/ai-sdk` and `agents/webfetch/ai-sdk`), so they keep the adapters' descriptions and text result formats.
+`web_search` and `web_fetch` wrap the AI SDK adapters from [`agents`](https://www.npmjs.com/package/agents) (`agents/websearch/ai-sdk` and `agents/webfetch/ai-sdk`), so they keep the adapters' text result formats and descriptions. `web_fetch` adds a sentence on URL fragments to its description.
 
 ## Features
 
