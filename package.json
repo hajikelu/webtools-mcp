@@ -15,26 +15,26 @@
   "dependencies": {
     "@modelcontextprotocol/server": "2.4.0",
     "agents": "0.33.0",
-    "jose": "^6.2.15",
+    "jose": "^6.2.18",
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "2.0.0-beta.v.12",
+    "@cloudflare/vite-plugin": "2.0.0-rc.1",
     "@types/node": "^26.6.6",
-    "cf": "1.0.0-beta.28",
-    "oxfmt": "0.76.0",
+    "cf": "1.0.0-rc.2",
+    "oxfmt": "0.79.0",
     "typescript": "^7.0.2",
-    "vite": "^8.3.6"
+    "vite": "^8.3.8"
   },
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
-      "version": "12.18.0",
+      "version": "12.21.0",
       "onFail": "error"
     },
     "runtime": {
       "name": "node",
-      "version": "26.13.0",
+      "version": "26.13.1",
       "onFail": "error"
     }
   }
